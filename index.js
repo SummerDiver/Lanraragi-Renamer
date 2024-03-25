@@ -21,12 +21,12 @@ const loadBackupFile = (dir = path.normalize('./backup.json')) => {
 const backupFile = loadBackupFile(backupFilePath)
 const { archives } = backupFile
 
-/* Test Only
- ** let archives = backupFile.archives.filter(
- **   (archive) =>
- **     archive.filename === '[Oreo] The Ultimate Goblin Gangbang 3 [原版]'
- ** )
- */
+/* // Test Only
+let archives = backupFile.archives.filter(
+  (archive) =>
+    archive.filename ===
+    '(C91) [夢茶会 (むちゃ)] 千鶴ちゃん開発日記4 [中国翻訳]'
+) */
 
 const newBackupFile = loadBackupFile(backupFilePath)
 
