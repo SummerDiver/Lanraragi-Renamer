@@ -1,6 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 
+const { updateMeta } = require('./updateMeta')
+
 const backupFilePath = path.normalize('./backup.json')
 const newBackupFilePath = path.normalize(
   'F:/Media/RenamerOutput/backup-new.json'
@@ -18,13 +20,19 @@ const loadBackupFile = (dir = path.normalize('./backup.json')) => {
 
 const backupFile = loadBackupFile(backupFilePath)
 const { archives } = backupFile
+
+/* Test Only
+ ** let archives = backupFile.archives.filter(
+ **   (archive) =>
+ **     archive.filename === '[Oreo] The Ultimate Goblin Gangbang 3 [原版]'
+ ** )
+ */
+
 const newBackupFile = loadBackupFile(backupFilePath)
-const newArchives = []
 
 console.log(archives?.length)
 
 const fileList = []
-
 const traverseDir = (dir = path.normalize('.')) => {
   const files = fs.readdirSync(dir)
   files.forEach((file) => {
@@ -38,49 +46,55 @@ const traverseDir = (dir = path.normalize('.')) => {
     }
   })
 }
-
 traverseDir(inputFolderPath)
-
 const totalFiles = fileList.length
 
-archives.forEach((archive, index) => {
-  const { filename, title } = archive
-  const found = fileList.find(({ file }) => path.parse(file).name === filename)
+async function process() {
+  const newArchives = []
 
-  const parsedTitle = title.replace(/[<>:"\/\\\|?*\x00-\x1F]/g, '-')
-  console.log(`【${index + 1}/${totalFiles}】${filename}\n\t---> ${title}`)
+  let count = 0
+  for (let archive of archives) {
+    const { filename, title } = archive
+    const found = fileList.find(
+      ({ file }) => path.parse(file).name === filename
+    )
 
-  if (!found) {
-    console.log(`Not found.`)
-  } else {
-    const { file, dir } = found
-    const oldPath = path.join(dir, file)
-    const newDir = dir.replace(inputFolderPath, outputFolderPath)
-    const newFile = parsedTitle + path.extname(file)
-    const tempPath = path.join(newDir, file)
-    const newPath = path.join(newDir, newFile)
+    const parsedTitle = title.replace(/[<>:"\/\\\|?*\x00-\x1F]/g, '-')
+    console.log(`【${++count}/${totalFiles}】${filename}\n\t---> ${title}`)
 
-    newArchives.push({ ...archive, file: parsedTitle })
+    if (!found) {
+      console.warn(`Not found.`)
+    } else {
+      const { file, dir } = found
 
-    if (!fs.existsSync(oldPath)) {
-      return
+      const oldPath = path.join(dir, file)
+      const newDir = dir.replace(inputFolderPath, outputFolderPath)
+      const newFile = parsedTitle + path.extname(file)
+      const newPath = path.join(newDir, newFile)
+
+      if (!fs.existsSync(oldPath)) {
+        continue
+      }
+
+      if (!fs.existsSync(newDir)) {
+        fs.mkdirSync(newDir, { recursive: true })
+      }
+
+      if (fs.existsSync(newPath)) {
+        newArchives.push({ ...archive })
+        console.log(`\tAlready exists.`)
+        continue
+      }
+
+      const updatedArchive = await updateMeta(archive, oldPath, newPath)
+
+      newArchives.push({ ...updatedArchive, file: parsedTitle })
+
+      console.log(`\tFinished.`)
     }
-
-    if (!fs.existsSync(newDir)) {
-      fs.mkdirSync(newDir, { recursive: true })
-    }
-
-    if (fs.existsSync(newPath)) {
-      console.log(`\tAlready exists.`)
-      return
-    }
-
-    fs.copyFileSync(oldPath, tempPath)
-    fs.renameSync(tempPath, newPath)
-
-    console.log(`\tFinished.`)
   }
-})
 
-newBackupFile.archives = newArchives
-fs.writeFileSync(newBackupFilePath, JSON.stringify(newBackupFile, null, 2))
+  newBackupFile.archives = newArchives
+  fs.writeFileSync(newBackupFilePath, JSON.stringify(newBackupFile, null, 2))
+}
+process()
