@@ -3,14 +3,14 @@ const path = require('path')
 
 const { updateMeta } = require('./updateMeta')
 
-const backupFilePath = path.normalize('./backup.json')
+const backupFilePath = path.normalize('F:/Media/Comics/backup.json')
 const newBackupFilePath = path.normalize(
   'F:/Media/RenamerOutput/backup-new.json'
 )
 const inputFolderPath = path.normalize('F:/Media/Comics')
 const outputFolderPath = path.normalize('F:/Media/RenamerOutput/Comics')
 
-const loadBackupFile = (dir = path.normalize('./backup.json')) => {
+const loadBackupFile = (dir = backupFilePath) => {
   try {
     return JSON.parse(fs.readFileSync(dir, 'utf8'))
   } catch (err) {
@@ -63,6 +63,7 @@ async function process() {
     console.log(`【${++count}/${totalFiles}】${filename}\n\t---> ${title}`)
 
     if (!found) {
+      newArchives.push({ ...archive })
       console.warn(`Not found.`)
     } else {
       const { file, dir } = found

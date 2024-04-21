@@ -7,13 +7,19 @@ const { computeArchiveId } = require('./computeArchiveId')
 
 module.exports = {
   updateMeta: async (archiveInfo, archivePath, outputPath) => {
-    const tagsObj = {}
+    const tagsObj = {
+      artist: new Set(),
+      source: new Set()
+    }
     archiveInfo.tags.split(',').forEach((tag) => {
       const [key, value] = tag.split(':')
-      tagsObj[key] = value
+      if (tagsObj.hasOwnProperty(key)) {
+        tagsObj[key].add(value)
+      }
     })
 
-    const exceptTags = ['artist', 'source', 'date_added']
+    // const exceptTags = ['artist', 'source', 'date_added']
+    const exceptTags = ['source', 'date_added']
     parsedTags = archiveInfo.tags
       .split(',')
       .filter((tag) => !exceptTags.includes(tag.split(':')[0]))
@@ -21,8 +27,8 @@ module.exports = {
 
     const xmlData = {
       ComicInfo: {
-        Writer: tagsObj.artist || 'unknown',
-        Web: tagsObj.source || null,
+        Writer: [...tagsObj.artist.values()].join(',') || 'unknown',
+        Web: [...tagsObj.source.values()].join(',') || null,
         Title: archiveInfo.title,
         Tags: parsedTags
       }
